@@ -5,6 +5,29 @@ import { MessagePattern } from '@nestjs/microservices';
 @Controller('gateway')
 export class GatewayController {
   constructor(private readonly gatewayService: GatewayService) {}
+
+
+  @MessagePattern({cmd:'process_data'}) // Pattern du message attendu
+  async processData(data: any) {
+    console.log("niveau gateway",data);
+   
+    
+    const command = `create_${data.moduleName}`;
+
+    try {
+      return this.gatewayService.forwardRequest(
+        data?.serviceName,
+        command,
+        data?.data
+      );
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+    console.log("sa marche trop bien",data);
+    
+    // Log les données reçues
+    return { status: 'success', received: data };
+  }
  
   @Post('call')
   async callService(
