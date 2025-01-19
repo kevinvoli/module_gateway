@@ -3,86 +3,52 @@ import { AppModule } from './app.module';
 import { ClientProxyFactory, MicroserviceOptions, Transport } from '@nestjs/microservices';
 import * as net from 'net';
 import { firstValueFrom } from 'rxjs';
+import * as os from 'os';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { CustomTcpExceptionFilter } from './custom-exception-filter';
 
+
+function getLocalIPAddress(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address; // Retourne la première adresse IPv4 non interne
+      }
+    }
+  }
+  return '127.0.0.1'; // Adresse de repli si aucune adresse n'est trouvée
+}
+// 192.168.183.216
+const hostName = getLocalIPAddress()
 const port = 3000;
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.connectMicroservice<MicroserviceOptions>({
+
+app.useGlobalFilters(new CustomTcpExceptionFilter());
+  
+
+    app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.TCP,
     options: {
-      host: '192.168.252.216',
+      host: hostName,
       port: port,
        // Port utilisé par le Gateway pour communiquer avec les services
     },
   });
 
-  // Crée un serveur TCP personnalisé
-const tcpServer = net.createServer((socket) => {
-  console.log('New connection established');
 
-  // Client TCP pour communiquer avec NestJS
-const nestClient = ClientProxyFactory.create({
-  transport: Transport.TCP,
-  options: {
-    host: '192.168.252.216',
-    port: port, // Correspond au port du service NestJS
-  },
-});
-
-  // Écouter les données envoyées par le client
-  socket.on('data', async (data) => {
-    console.log('Data received:', data.toString());
-
-    try {
-      // Parse les données reçues
-      const message = JSON.parse(data.toString());
-      console.log("mes data:",message);
-      
-
-      // Envoyer le message au service NestJS
-      const response = await firstValueFrom( nestClient.send({
-        cmd:message.cmd }, 
-        message.data ? message.data : {}
-     ))
-      console.log('Response from NestJS:', response);
-
-      // Répondre au client
-      socket.write(JSON.stringify(response) + '\n');
-    } catch (error) {
-      console.error('Error processing data:', error.message);
-      socket.write(JSON.stringify({ error: 'Invalid message format' }) + '\n');
-    }
-  });
-
-  socket.on('close', () => {
-    console.log('Connection closed');
-  });
-
-  socket.on('error', (err) => {
-    console.error('Socket error:', err);
-  });
-  });
-
-// Lancer le serveur TCP sur un port spécifique
-  tcpServer.listen(3006, '192.168.252.216', () => {
-    console.log('Custom TCP server is listening on port 3004');
-  });
-
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true, // Cela transforme les objets bruts en instances de DTO
+    whitelist: true, // Cela supprime les propriétés non définies dans le DTO
+    forbidNonWhitelisted: true, // Empêche l'envoi de propriétés non spécifiées
+  }));
     // Synchronisation des microservices
     await app.startAllMicroservices();
-    console.log('Gateway connecté aux microservices via TCP');
-
-    const corsOptions = {
-      origin: "*",
-      credentials: true,
-      methods:"*",
-      allowedHeaders: 'Content-Type,Authorization',
-    };
-  
-    app.enableCors(corsOptions)
+    console.log('Gateway connecté aux microservices via TCP',port);
+    
     // Serveur HTTP du Gateway
     await app.listen(3003);
-    console.log('Gateway HTTP disponible sur http://127.0.0.1:3003');
+    console.log(`server http tourne sur l'addresse http://${hostName}:${3003}`);
 }
 bootstrap();

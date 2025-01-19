@@ -10,6 +10,7 @@ import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { DiscoveryService } from '@nestjs/core';
 import { ServiceDiscoveryService } from 'src/discovery/discovery.service';
 import { JournalServicesService } from 'src/journal_services/journal_services.service';
+import { CreatedataDto } from './dto/create-gateway.dto';
 
 @Injectable()
 export class GatewayService {
@@ -28,17 +29,19 @@ export class GatewayService {
     }
   }
   // Route une requête dynamique vers un microservice.
-  async forwardRequest(serviceName: string,command:string,data?: any) {
+  // {serviceName: string,command:string,data?: any}
+  async forwardRequest(data:CreatedataDto) {
 
-    const service = await this.discoveryService.getService(serviceName);
+    const service = await this.discoveryService.getService(data.serviceName);
     if (!service) {
-      throw new NotFoundException(`Service ${serviceName} non trouvé`);
+      throw new NotFoundException(`Service ${data.serviceName} non trouvé`);
     }
+      console.log("mes servcie",service);
       
     const startTime = Date.now();
     const client =await this.createTcpClient( service.host,parseInt(service.port) );
     try {
-      const response =  await firstValueFrom(client.send({cmd:command},data? data:{}))
+      const response =  await firstValueFrom(client.send({cmd:data.moduleName},data.data? data.data:{}))
           // Journalise la requête réussie
           await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'SUCCESS',tempsReponse:`${Date.now()- startTime}`,});
       return response;
@@ -47,7 +50,7 @@ export class GatewayService {
       // Journalise l'échec
       await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'FAILED',tempsReponse:`${Date.now()- startTime}`,});
 
-         throw new NotFoundException( `Erreur lors de la communication avec le service ${serviceName}: ${error}`,)
+         throw new NotFoundException( `Erreur lors de la communication avec le service ${data.serviceName}: ${error}`,)
        }finally{
          client.close()
        }  

@@ -1,45 +1,49 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, RpcException } from '@nestjs/microservices';
+import { CreatedataDto } from './dto/create-gateway.dto';
 
 @Controller('gateway')
 export class GatewayController {
   constructor(private readonly gatewayService: GatewayService) {}
 
-
+@UsePipes(new ValidationPipe({
+  transform: true, // Cela transforme les objets bruts en instances de DTO
+  whitelist: true, // Cela supprime les propriétés non définies dans le DTO
+  forbidNonWhitelisted: true, 
+  exceptionFactory: (errors) =>{
+  const formattedErrors = errors.map((err) => ({
+    property: err.property,
+    constraints: err.constraints,
+  }));
+  return new RpcException(formattedErrors);
+  
+}}))
   @MessagePattern({cmd:'process_data'}) // Pattern du message attendu
-  async processData(data: any) {
-    console.log("niveau gateway",data);
-   
-    
-    const command = `create_${data.moduleName}`;
-
+  async processData(data: CreatedataDto) {
     try {
+    console.log("niveau ddd gateway",data);
+    const command = `create_${data.moduleName}`;
+    data.moduleName = command
       return this.gatewayService.forwardRequest(
-        data?.serviceName,
-        command,
-        data?.data
+        data
       );
     } catch (error) {
+      console.log("leserrue",error);
+      
       return { success: false, message: error.message };
     }
-    console.log("sa marche trop bien",data);
-    
-    // Log les données reçues
-    return { status: 'success', received: data };
   }
- 
+
   @Post('call')
   async callService(
-    @Body() body: { serviceName: string; path: string; method: string; data?: any },
+    @Body() body: CreatedataDto
   ) {
     console.log("ici le body",body);
    
     try {
       return this.gatewayService.forwardRequest(
-        body.serviceName,
-        'handle_message',
-        body.data,
+        body
       );
     } catch (error) {
       return { success: false, message: error.message };
@@ -54,8 +58,15 @@ export class GatewayController {
       @Body() payload: any,
     ) {
       const command = `create_${moduleName}`;
+      let data = {
+        serviceName:serviceName,
+        moduleName: command,
+        data:payload,
+        method:'POST',
+        serviceSource:'0'
+      }
       
-      return this.gatewayService.forwardRequest(serviceName, command, payload);
+      return this.gatewayService.forwardRequest(data);
     }
   
     @Get(':service/:module/:id')
@@ -65,7 +76,14 @@ export class GatewayController {
       @Param('id') id: number,
     ) {
       const command = `findOne_${moduleName}`;
-      return this.gatewayService.forwardRequest(serviceName, command, id);
+      let data = {
+        serviceName:serviceName,
+        moduleName: command,
+        data:id,
+        method:'GET',
+        serviceSource:'0'
+      }
+      return this.gatewayService.forwardRequest(data);
     }
   
     @Get()    
@@ -74,7 +92,14 @@ export class GatewayController {
       @Query('module') moduleName: string,
     ) {
       const command = `findAll_${moduleName}`;
+      let data = {
+        serviceName:serviceName,
+        moduleName: command,
+        data:null,
+        method:'GET',
+        serviceSource:'0'
+      }
       console.log("ma route service passe:",command,serviceName);
-      return this.gatewayService.forwardRequest(serviceName, command);
+      return this.gatewayService.forwardRequest(data);
     }
 }

@@ -7,6 +7,8 @@ import { JournalServicesModule } from './journal_services/journal_services.modul
 import { DatabaseModule } from './database/database.module';
 import * as Joi from '@hapi/joi';
 import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { LoggingInterceptor } from './loggin.Interceptor';
 
 @Module({
   imports: [
@@ -21,6 +23,11 @@ import { ConfigModule } from '@nestjs/config';
       })
     }),GatewayModule, DiscoveryModule, JournalServicesModule, DatabaseModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass:LoggingInterceptor
+    }
+  ],
 })
 export class AppModule {}

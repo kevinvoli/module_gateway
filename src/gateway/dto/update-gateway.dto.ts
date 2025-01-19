@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateGatewayDto } from './create-gateway.dto';
+import { CreatedataDto } from './create-gateway.dto';
 
-export class UpdateGatewayDto extends PartialType(CreateGatewayDto) {
+export class UpdateGatewayDto extends PartialType(CreatedataDto) {
   id: number;
 }
