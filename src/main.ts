@@ -5,7 +5,7 @@ import * as net from 'net';
 import { firstValueFrom } from 'rxjs';
 import * as os from 'os';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
-import { CustomTcpExceptionFilter } from './custom-exception-filter';
+// import { CustomTcpExceptionFilter } from './custom-exception-filter';
 
 
 function getLocalIPAddress(): string {
@@ -25,7 +25,7 @@ const port = 3000;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-app.useGlobalFilters(new CustomTcpExceptionFilter());
+// app.useGlobalFilters(new CustomTcpExceptionFilter());
   
 
     app.connectMicroservice<MicroserviceOptions>({

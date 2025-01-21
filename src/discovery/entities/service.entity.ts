@@ -16,10 +16,10 @@ export class Services {
   @Column("varchar", { name: "port", length: 255 })
   port: string;
 
-  @Column("varchar", { name: "protocole", length: 255 })
+  @Column("varchar", { name: "protocole", length: 255, default:"tcp" })
   protocole: string;
 
-  @Column("varchar", { name: "cle_API", length: 255 })
+  @Column("varchar", { name: "cle_API", length: 255, default: null })
   cleApi: string;
 
   @OneToMany(

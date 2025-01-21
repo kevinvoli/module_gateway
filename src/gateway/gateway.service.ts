@@ -2,12 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Services } from '../discovery/entities/service.entity';
-// import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { JournalServices } from 'src/journal_services/entities/journal_service.entity';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
-import { DiscoveryService } from '@nestjs/core';
 import { ServiceDiscoveryService } from 'src/discovery/discovery.service';
 import { JournalServicesService } from 'src/journal_services/journal_services.service';
 import { CreatedataDto } from './dto/create-gateway.dto';
@@ -36,7 +32,7 @@ export class GatewayService {
     if (!service) {
       throw new NotFoundException(`Service ${data.serviceName} non trouvé`);
     }
-      console.log("mes servcie",service);
+      // console.log("mes servcie",service);
       
     const startTime = Date.now();
     const client =await this.createTcpClient( service.host,parseInt(service.port) );

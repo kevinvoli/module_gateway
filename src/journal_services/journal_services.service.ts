@@ -15,7 +15,7 @@ export class JournalServicesService {
   ){}
 
 
-  async create(createJournalServiceDto) {
+  async create(createJournalServiceDto: CreateJournalServiceDto) {
 console.log('creation du journal',createJournalServiceDto);
 
     try {
@@ -29,9 +29,6 @@ console.log('creation du journal',createJournalServiceDto);
     } catch (error) {
       throw new ConflictException( `erreur du journal service ${error}`)
     }
-
-
-    
   }
 
   findAll() {

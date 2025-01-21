@@ -28,8 +28,14 @@ export class AppController {
     console.log("Sending message to FastAPI via TCP...");
     
     try { 
-      const data = { key: 'value' };
-      const client = await this.createTCPClient('192.168.183.153', 3000); 
+      const data = { 
+        moduleName: 'azee',
+        data:[],
+        serviceName:"service",
+        method:"POST",
+        serviceSource:"2"
+       };
+      const client = await this.createTCPClient('192.168.183.153', 3004); 
       const response = await firstValueFrom(client.send({ cmd: 'process_data' }, data ? data : {}));
       console.log('Response from FastAPI:', response);
       return response;

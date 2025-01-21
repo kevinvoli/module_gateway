@@ -1,5 +1,6 @@
 import { Body, Controller, Param, Post } from "@nestjs/common";
 import { ServiceDiscoveryService } from "./discovery.service";
+import { CreateDiscoveryDto } from "./dto/create-discovery.dto";
 
 @Controller('discovery')
 export class ServiceDiscoveryController {
@@ -7,15 +8,14 @@ export class ServiceDiscoveryController {
 
   @Post('register')
   async registerService(
-    @Body() body: { 
-      name: string; 
-      host: string;
-      port: string; 
-      apiKey?: string; 
-      protocole?:string}) {
+    @Body() body: CreateDiscoveryDto) {
     console.log('registre dans discoverie');
+    try {
+      return this.serviceDiscoveryService.registerService(body.nom, body.host,body.port, body.cleApi, body.protocole);
+    } catch (error) {
+      throw new Error(error)
+    }
     
-    return this.serviceDiscoveryService.registerService(body.name, body.host,body.port, body.apiKey, body.protocole);
   }
 
   @Post('service/:nom')

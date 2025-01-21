@@ -9,6 +9,7 @@ import * as Joi from '@hapi/joi';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggingInterceptor } from './loggin.Interceptor';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -21,7 +22,12 @@ import { LoggingInterceptor } from './loggin.Interceptor';
         MYSQL_DATABASE:Joi.string().required(),
         SERVER_PORT:Joi.number().required()
       })
-    }),GatewayModule, DiscoveryModule, JournalServicesModule, DatabaseModule],
+    }),
+    GatewayModule, 
+    DiscoveryModule, 
+    JournalServicesModule, 
+    DatabaseModule, 
+    AuthModule],
   controllers: [AppController],
   providers: [AppService,
     {
