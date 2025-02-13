@@ -1,21 +1,24 @@
-import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { CreatedataDto } from './dto/create-gateway.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { AuthService } from 'src/auth/auth.service';
-import { ifError } from 'assert';
+import { CreateUserDto } from './dto/create-uset.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+
 
 @Controller('gateway')
+@UsePipes(new ValidationPipe(
+{  transform: true, // Cela transforme les objets bruts en instances de DTO
+  whitelist: true, // Cela supprime les propriétés non définies dans le DTO
+  forbidNonWhitelisted: true,
+
+}
+))
 export class GatewayController {
 
-  constructor(
-    private readonly gatewayService: GatewayService,
-    private readonly authService: AuthService
-  ) {}
+  constructor(private readonly gatewayService: GatewayService,) {}
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
+ 
   @UsePipes(new ValidationPipe({
   transform: true, // Cela transforme les objets bruts en instances de DTO
   whitelist: true, // Cela supprime les propriétés non définies dans le DTO
@@ -27,18 +30,16 @@ export class GatewayController {
   }));
   return new RpcException(formattedErrors);
   
-}}))
+}
+}))
 
-
-@UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
   @MessagePattern({cmd:'process_data'}) // Pattern du message attendu
   async processData(data: CreatedataDto) {
     try {
     console.log("niveau ddd gateway",data);
     const command = `create_${data.moduleName}`;
     data.moduleName = command
-      return this.gatewayService.forwardRequest(
+      return this.gatewayService.serviceCommunication(
         data
       );
     } catch (error) {
@@ -48,33 +49,76 @@ export class GatewayController {
     }
   }
 
-
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
-  @Post('call')
-  async callService(
-    @Body() body: CreatedataDto
-  ) {
-    console.log("ici le body",body);
-   
+  @MessagePattern({cmd:'findAll'}) // Pattern du message attendu
+  async finds(data: CreatedataDto) {
     try {
-      return this.gatewayService.forwardRequest(
-        body
+    console.log("niveau ddd gateway",data);
+    const command = `findAll_${data.moduleName}`;
+    data.moduleName = command
+      return this.gatewayService.serviceCommunication(
+        data
       );
     } catch (error) {
+      console.log("leserrue",error);
+      
       return { success: false, message: error.message };
     }
-   
   }
-  
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
+  @MessagePattern({cmd:'create'}) // Pattern du message attendu
+  async creates(data: CreatedataDto) {
+    try {
+    console.log("niveau ddd gateway",data);
+    const command = `create_${data.moduleName}`;
+    data.moduleName = command
+      return this.gatewayService.serviceCommunication(
+        data
+      );
+    } catch (error) {
+      console.log("leserrue",error);
+      
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({cmd:'update'}) // Pattern du message attendu
+  async updates(data: CreatedataDto) {
+    try {
+    console.log("niveau ddd gateway",data);
+    const command = `create_${data.moduleName}`;
+    data.moduleName = command
+      return this.gatewayService.serviceCommunication(
+        data
+      );
+    } catch (error) {
+      console.log("leserrue",error);
+      
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({cmd:'remove'}) // Pattern du message attendu
+  async removes(data: CreatedataDto) {
+    try {
+    console.log("niveau ddd gateway",data);
+    const command = `create_${data.moduleName}`;
+    data.moduleName = command
+      return this.gatewayService.serviceCommunication(
+        data
+      );
+    } catch (error) {
+      console.log("leserrue",error);
+      
+      return { success: false, message: error.message };
+    }
+  }
+
+  
   @Post('create')
   async create(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
+    @Req() req,
     @Body() payload: any,
   ) {
     const command = `create_${moduleName}`;
@@ -85,18 +129,17 @@ export class GatewayController {
       method:'POST',
       serviceSource:'0'
     }
-    
-    return this.gatewayService.forwardRequest(data);
+    const { userId, roleId } = req.user;
+    return this.gatewayService.forwardRequest(data, { userId, roleId });
   }
 
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
+ 
+  @Get('')
   async findOne(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
     @Param('id') id: number,
+    @Request() req,
   ) {
     const command = `findOne_${moduleName}`;
     let data = {
@@ -106,16 +149,16 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    return this.gatewayService.forwardRequest(data);
+    const { userId, roleId } = req.user;
+    return this.gatewayService.forwardRequest(data,{ userId, roleId });
   }
 
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
   @Get()    
   async find(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
+    @Request() req,
   ) {
     const command = `findAll_${moduleName}`;
     let data = {
@@ -125,22 +168,23 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
+    console.log("actualy user: ", req.user);
+    
+    const { userId, roleId } = req.user;
     console.log("ma route service passe:",command,serviceName);
-    return this.gatewayService.forwardRequest(data);
+    return this.gatewayService.forwardRequest(data,{ userId, roleId });
   }
 
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
     @Param('id') id: string, 
+    @Request() req,
     @Body() body
   ) {
     const command = `findAll_${moduleName}`;
-
     let data = {
       serviceName:serviceName,
       moduleName: command,
@@ -148,25 +192,25 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
+    const { userId, roleId } = req.user;
     // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.forwardRequest(data);
+    const token= await this.gatewayService.forwardRequest(data,{ userId, roleId });
     if (!token) {
       throw new Error("utilisateur non trouve")
     }
     return "update"
   }
 
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(JwtAuthGuard)
+ 
   @Delete('delete/:id')
   async remove(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Request() req,
   ) {
 
-    const command = `findAll_${moduleName}`;
+    const command = `remove_${moduleName}`;
 
     let data = {
       serviceName:serviceName,
@@ -175,22 +219,23 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
+    const { userId, roleId } = req.user;
     // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.forwardRequest(data);
+    const token= await this.gatewayService.forwardRequest(data,{ userId, roleId });
     if (!token) {
       throw new Error("utilisateur non trouve")
     }
     return "remove"
   }
 
-  
   @Post('login')
   async login(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
-    @Body() loginDto: { email: string; password: string }
-  ) {
-    const command = `findAll_${moduleName}`;
+    @Body() loginDto:LoginUserDto
+  )
+   {
+    const command = `login_${moduleName}`;
 
     try {
       let data = {
@@ -200,25 +245,27 @@ export class GatewayController {
         method:'GET',
         serviceSource:'0'
       }
+      console.log("data:",data);
       // recupere les information de l'utilisateur aupres du service authentification
-      const user= await this.gatewayService.forwardRequest(data);
+      const user= await this.gatewayService.serviceCommunication(data);
       if (!user) {
         throw new Error("utilisateur non trouve")
       }
 
       const payload = { email: user?.email, roles: ['admin'],userId:user?.id };
-      return this.authService.login(payload);
+      return user;
     } catch (error) {
       throw new Error(error)
     }
     
   }
 
-  
+
   @Post('validate-token')
   async validateToken(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
+    @Request() req,
     @Body() body: { token: string }
   
   ) {
@@ -231,11 +278,70 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
+    const { userId, roleId } = req.user;
     // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.forwardRequest(data);
+    const token= await this.gatewayService.forwardRequest(data,{ userId, roleId });
     if (!token) {
       throw new Error("utilisateur non trouve")
     }
-    return this.authService.validateToken(token);
+    // return this.authService.validateToken(token);
+  }
+
+  @Post('create_user')
+  async createUser(
+    @Query('service') serviceName: string,
+    @Query('module') moduleName: string,
+    @Body() body:CreateUserDto
+  
+  ) {
+    console.log("mes data",body);
+    
+    const command = `create_${moduleName}`;
+    console.log('create:', command);
+    
+
+    let data = {
+      serviceName:serviceName,
+      moduleName: command,
+      data:body,
+      method:'GET',
+      serviceSource:'0'
+    }
+    console.log("les date:", data);
+    
+    // recupere les information de l'utilisateur aupres du service authentification
+    const token= await this.gatewayService.serviceCommunication(data);
+    if (!token) {
+      throw new Error("utilisateur non trouve")
+    }
+    return token
+  }
+
+  @Get('confirmation')
+  async comfirmation(
+    @Query('service') serviceName: string,
+    @Query('module') moduleName: string,
+    @Query('token') tokens: string,
+
+  
+  ) {
+    const command = `confirmation_${moduleName}`;
+    console.log("dfvdcs");
+    
+    let data = {
+      serviceName:serviceName,
+      moduleName: command,
+      data:{tokens},
+      method:'GET',
+      serviceSource:'0'
+    }
+    console.log("les date:", data);
+    
+    // recupere les information de l'utilisateur aupres du service authentification
+    const token= await this.gatewayService.serviceCommunication(data);
+    if (!token) {
+      throw new Error("utilisateur non trouve")
+    }
+    return token
   }
 }

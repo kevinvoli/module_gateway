@@ -27,6 +27,8 @@ export class ServiceDiscoveryService {
   }
 
   async getService(name: string) {
+    console.log("le token:", name);
+
     return await this.serviceRepository.findOne({ where: { nom: name } });
   }
 

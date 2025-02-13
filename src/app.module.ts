@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GatewayModule } from './gateway/gateway.module';
@@ -9,10 +9,13 @@ import * as Joi from '@hapi/joi';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggingInterceptor } from './loggin.Interceptor';
-import { AuthModule } from './auth/auth.module';
+import { ServiceDiscoveryService } from './discovery/discovery.service';
+import { AuthMiddleware } from './utils/auth.middleware';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Services } from './discovery/entities/service.entity';
 
 @Module({
-  imports: [
+  imports: [TypeOrmModule.forFeature([Services]),
     ConfigModule.forRoot({
       validationSchema: Joi.object({
         MYSQL_HOST:Joi.string().required(),
@@ -27,13 +30,20 @@ import { AuthModule } from './auth/auth.module';
     DiscoveryModule, 
     JournalServicesModule, 
     DatabaseModule, 
-    AuthModule],
+    ],
   controllers: [AppController],
-  providers: [AppService,
+  providers: [AppService,ServiceDiscoveryService,
     {
       provide: APP_INTERCEPTOR,
       useClass:LoggingInterceptor
     }
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .exclude('/auth/login', '/public', '/discovery/register','gateway/login','gateway/create_user','gateway/confirmation') // Exclure des routes spécifiques
+      .forRoutes('*'); // Appliquer sur toutes les routes
+  }
+}

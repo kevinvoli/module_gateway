@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ClientProxyFactory, MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { ClientProxyFactory, MicroserviceOptions, RpcException, Transport } from '@nestjs/microservices';
 import * as net from 'net';
 import { firstValueFrom } from 'rxjs';
 import * as os from 'os';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { AuthMiddleware } from './utils/auth.middleware';
+import { ServiceDiscoveryService } from './discovery/discovery.service';
 // import { CustomTcpExceptionFilter } from './custom-exception-filter';
 
 
@@ -37,12 +39,7 @@ async function bootstrap() {
     },
   });
 
-
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true, // Cela transforme les objets bruts en instances de DTO
-    whitelist: true, // Cela supprime les propriétés non définies dans le DTO
-    forbidNonWhitelisted: true, // Empêche l'envoi de propriétés non spécifiées
-  }));
+ 
     // Synchronisation des microservices
     await app.startAllMicroservices();
     console.log('Gateway connecté aux microservices via TCP',port);

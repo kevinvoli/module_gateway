@@ -9,7 +9,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) {
     super();
   }
-
+  
    canActivate(context: ExecutionContext) {
 
     const isPublic = this.reflector.getAllAndOverride('isPublic', [
@@ -18,7 +18,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
 
     if (isPublic) return true;
-    console.log("Hoo lalalalal erreur",this.reflector)
+
     return super.canActivate(context);
   }
   
