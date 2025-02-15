@@ -7,6 +7,7 @@ import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceDiscoveryService } from 'src/discovery/discovery.service';
 import { JournalServicesService } from 'src/journal_services/journal_services.service';
 import { CreatedataDto } from './dto/create-gateway.dto';
+import { permission } from 'process';
 
 @Injectable()
 export class GatewayService {
@@ -32,8 +33,10 @@ export class GatewayService {
   }
   // Route une requête dynamique vers un microservice.
   // {serviceName: string,command:string,data?: any}
-  async forwardRequest(data:CreatedataDto,users:{userId:any,roleId:any}) {
-    const {userId, roleId} = users
+  async forwardRequest(data:CreatedataDto,users) {
+    const {user,permission} = users
+    console.log("mes user:", users);
+    
     const service = await this.discoveryService.getService(data.serviceName);
     if (!service) {
       throw new NotFoundException(`Service ${data.serviceName} non trouvé`);
@@ -43,7 +46,7 @@ export class GatewayService {
     const startTime = Date.now();
     const client =await this.createTcpClient( service.host,parseInt(service.port) );
     try {
-      const response =  await firstValueFrom(client.send({cmd:data.moduleName},{user:{userId,roleId}, data: data.data? data.data:{}}))
+      const response =  await firstValueFrom(client.send({cmd:data.moduleName},{user:{user,permission}, data: data.data? data.data:{}}))
           // Journalise la requête réussie
           await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'SUCCESS',tempsReponse:`${Date.now()- startTime}`,});
           console.log("la reponse:tok", response);

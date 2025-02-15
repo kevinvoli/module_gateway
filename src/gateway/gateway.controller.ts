@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req, NotFoundException } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { CreatedataDto } from './dto/create-gateway.dto';
@@ -134,13 +134,15 @@ export class GatewayController {
   }
 
  
-  @Get('')
+  @Get('/:')
   async findOne(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
     @Param('id') id: number,
     @Request() req,
   ) {
+    console.log("findone data:", req.user);
+
     const command = `findOne_${moduleName}`;
     let data = {
       serviceName:serviceName,
@@ -149,6 +151,8 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
+    console.log("findone data:", req.user);
+    
     const { userId, roleId } = req.user;
     return this.gatewayService.forwardRequest(data,{ userId, roleId });
   }
@@ -160,7 +164,10 @@ export class GatewayController {
     @Query('module') moduleName: string,
     @Request() req,
   ) {
-    const command = `findAll_${moduleName}`;
+    console.log('mes data:', req.user);
+
+    try {
+      const command = `findAll_${moduleName}`;
     let data = {
       serviceName:serviceName,
       moduleName: command,
@@ -168,11 +175,17 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    console.log("actualy user: ", req.user);
+    console.log('mes data:', req.user);
     
-    const { userId, roleId } = req.user;
-    console.log("ma route service passe:",command,serviceName);
-    return this.gatewayService.forwardRequest(data,{ userId, roleId });
+    const userId = req.user?.id;
+    const roleId = req.user?.roleId;
+
+    return await this.gatewayService.forwardRequest(data,req.user);
+    } catch (error) {
+      throw new NotFoundException(error);
+    }
+    
+    
   }
 
 

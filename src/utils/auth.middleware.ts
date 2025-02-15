@@ -21,18 +21,25 @@ export class AuthMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     const token = req.headers['authorization']?.split(' ')[1];
+    console.log("la :",token);
   
     if (!token) {
       return res.status(401).json({ message: 'Token is missing' });
     }
 
     try {
+      console.log("service:", token);
+
       const service = await this.discoveryService.getService('authService');
+      console.log("service:", service);
+
       if (!service) {
+        console.log("service:", service);
+        
         throw new NotFoundException(`Service authService non trouvé`);
       }
 
-      const client = this.createTCPClient(service.host, parseInt(service.port));
+      const client = await this.createTCPClient(service.host, parseInt(service.port));
       const response = await firstValueFrom(client.send({ cmd: 'validate_token' }, { token }));
       console.log("la response:",response);
       
