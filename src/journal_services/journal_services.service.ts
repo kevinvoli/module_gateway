@@ -16,7 +16,7 @@ export class JournalServicesService {
 
 
   async create(createJournalServiceDto: CreateJournalServiceDto) {
-console.log('creation du journal',createJournalServiceDto);
+// console.log('creation du journal',createJournalServiceDto);
 
     try {
       const journal = await this.journalServicesRepository.create({
@@ -31,8 +31,8 @@ console.log('creation du journal',createJournalServiceDto);
     }
   }
 
-  findAll() {
-    return `This action returns all journalServices`;
+  async findAll() {
+    return await this.journalServicesRepository.find();
   }
 
   findOne(id: number) {

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req, NotFoundException, Res, ConflictException } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { CreatedataDto } from './dto/create-gateway.dto';
 import { CreateUserDto } from './dto/create-uset.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { Response } from 'express';
 
 
 @Controller('gateway')
@@ -175,7 +176,7 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    console.log('mes data:', req.user);
+    console.log('mes data:', data);
     
     const userId = req.user?.id;
     const roleId = req.user?.roleId;
@@ -245,11 +246,13 @@ export class GatewayController {
   async login(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
-    @Body() loginDto:LoginUserDto
+    @Body() loginDto:LoginUserDto,
+    @Res() res: Response,
   )
    {
     const command = `login_${moduleName}`;
-
+    console.log(loginDto);
+    
     try {
       let data = {
         serviceName:serviceName,
@@ -261,12 +264,15 @@ export class GatewayController {
       console.log("data:",data);
       // recupere les information de l'utilisateur aupres du service authentification
       const user= await this.gatewayService.serviceCommunication(data);
+      console.log("data:",user);
+
       if (!user) {
         throw new Error("utilisateur non trouve")
       }
-
-      const payload = { email: user?.email, roles: ['admin'],userId:user?.id };
-      return user;
+      console.log("on users:", user);
+      
+      const payload = { token:user.token, status:user.status, user : user.user};
+      return res.json(payload)
     } catch (error) {
       throw new Error(error)
     }
@@ -304,30 +310,37 @@ export class GatewayController {
   async createUser(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
+    @Res() res: Response,
     @Body() body:CreateUserDto
   
   ) {
-    console.log("mes data",body);
-    
-    const command = `create_${moduleName}`;
-    console.log('create:', command);
     
 
-    let data = {
-      serviceName:serviceName,
-      moduleName: command,
-      data:body,
-      method:'GET',
-      serviceSource:'0'
+    try {
+      const command = `create_${moduleName}`;
+      console.log('create:', command);
+      
+  
+      let data = {
+        serviceName:serviceName,
+        moduleName: command,
+        data:body,
+        method:'GET',
+        serviceSource:'0'
+      }
+      console.log("les date:", data);
+      // recupere les information de l'utilisateur aupres du service authentification
+      const token= await this.gatewayService.serviceCommunication(data);
+      if (!token) {
+        throw new Error("utilisateur non trouve")
+      }
+      return res.json({token})
+    } catch (error) {
+      throw new Error(`Erreur HTTP : ${error.status} ${error}`);
+
     }
-    console.log("les date:", data);
-    
-    // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.serviceCommunication(data);
-    if (!token) {
-      throw new Error("utilisateur non trouve")
-    }
-    return token
+
+  
   }
 
   @Get('confirmation')
@@ -335,8 +348,6 @@ export class GatewayController {
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
     @Query('token') tokens: string,
-
-  
   ) {
     const command = `confirmation_${moduleName}`;
     console.log("dfvdcs");
@@ -348,13 +359,16 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    console.log("les date:", data);
     
     // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.serviceCommunication(data);
-    if (!token) {
-      throw new Error("utilisateur non trouve")
+    try {
+      const token= await this.gatewayService.serviceCommunication(data);
+      return { message: "Email vérifié avec succès !" }
+    } catch (error) {
+      if (error.statusCode===409) {
+      throw new ConflictException(error)
+      }
+      throw new ConflictException(error)
     }
-    return token
   }
 }

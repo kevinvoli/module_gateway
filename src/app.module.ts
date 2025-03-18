@@ -43,7 +43,7 @@ export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .exclude('/auth/login', '/public', '/discovery/register','gateway/login','gateway/create_user','gateway/confirmation') // Exclure des routes spécifiques
+      .exclude('gateway/login', '/public', '/discovery/register','gateway/login','gateway/create_user','gateway/confirmation') // Exclure des routes spécifiques
       .forRoutes('*'); // Appliquer sur toutes les routes
   }
 }

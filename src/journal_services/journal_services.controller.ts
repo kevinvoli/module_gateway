@@ -2,19 +2,21 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { JournalServicesService } from './journal_services.service';
 import { CreateJournalServiceDto } from './dto/create-journal_service.dto';
 import { UpdateJournalServiceDto } from './dto/update-journal_service.dto';
+import { log } from 'console';
 
 @Controller('journal-services')
 export class JournalServicesController {
   constructor(private readonly journalServicesService: JournalServicesService) {}
-
-  @Post()
-  create(@Body() createJournalServiceDto: CreateJournalServiceDto) {
-    return this.journalServicesService.create(createJournalServiceDto);
-  }
-
   @Get()
-  findAll() {
-    return this.journalServicesService.findAll();
+   async findAll() {
+    console.log("les lournaux ====================================================================================================");
+    try {
+    const result= await this.journalServicesService.findAll();
+      console.table(result);
+    return result
+    } catch (error) {
+      throw new Error(error)
+    }
   }
 
   @Get(':id')

@@ -1,13 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ClientProxyFactory, MicroserviceOptions, RpcException, Transport } from '@nestjs/microservices';
-import * as net from 'net';
-import { firstValueFrom } from 'rxjs';
+
 import * as os from 'os';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
-import { AuthMiddleware } from './utils/auth.middleware';
-import { ServiceDiscoveryService } from './discovery/discovery.service';
-// import { CustomTcpExceptionFilter } from './custom-exception-filter';
+
 
 
 function getLocalIPAddress(): string {
@@ -27,8 +23,6 @@ const port = 3000;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-// app.useGlobalFilters(new CustomTcpExceptionFilter());
-  
 
     app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.TCP,
@@ -44,6 +38,11 @@ async function bootstrap() {
     await app.startAllMicroservices();
     console.log('Gateway connecté aux microservices via TCP',port);
     
+    app.enableCors({
+      origin: '*', // URL du front-end
+      methods: '*',
+      allowedHeaders: 'Content-Type,Authorization',
+    });
     // Serveur HTTP du Gateway
     await app.listen(3003);
     console.log(`server http tourne sur l'addresse http://${hostName}:${3003}`);

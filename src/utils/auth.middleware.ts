@@ -22,6 +22,7 @@ export class AuthMiddleware implements NestMiddleware {
   async use(req: Request, res: Response, next: NextFunction) {
     const token = req.headers['authorization']?.split(' ')[1];
     console.log("la :",token);
+    console.groupCollapsed(req.headers)
   
     if (!token) {
       return res.status(401).json({ message: 'Token is missing' });
