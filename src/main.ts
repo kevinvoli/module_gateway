@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ClientProxyFactory, MicroserviceOptions, RpcException, Transport } from '@nestjs/microservices';
 
 import * as os from 'os';
+import { AllExceptionsFilter } from './custom-exception-filter';
 
 
 
@@ -41,8 +42,9 @@ async function bootstrap() {
     app.enableCors({
       origin: '*', // URL du front-end
       methods: '*',
-      allowedHeaders: 'Content-Type,Authorization',
+      allowedHeaders: ['Content-Type', 'Authorization'],
     });
+    app.useGlobalFilters(new AllExceptionsFilter());
     // Serveur HTTP du Gateway
     await app.listen(3003);
     console.log(`server http tourne sur l'addresse http://${hostName}:${3003}`);

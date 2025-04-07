@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req, NotFoundException, Res, ConflictException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UsePipes, ValidationPipe, BadRequestException, Patch, Delete, ClassSerializerInterceptor, UseInterceptors, UseGuards, Request, Req, NotFoundException, Res, ConflictException, HttpStatus, InternalServerErrorException, HttpException } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { CreatedataDto } from './dto/create-gateway.dto';
@@ -122,20 +122,38 @@ export class GatewayController {
     @Req() req,
     @Body() payload: any,
   ) {
-    const command = `create_${moduleName}`;
-    let data = {
-      serviceName:serviceName,
-      moduleName: command,
-      data:payload,
-      method:'POST',
-      serviceSource:'0'
+    
+    try {
+      console.log("je suis ici",req.user);
+    
+      const command = `create_${moduleName}`;
+      let data = {
+        serviceName:serviceName,
+        moduleName: command,
+        data:payload,
+        method:'POST',
+        serviceSource:'0'
+      }
+      console.log("les create ",data);
+      const { user, roleId } = req.user;
+      return await this.gatewayService.serviceCommunication(data);
+    } catch (error) {
+      console.log("erreur", error);
+
+      // Si c’est déjà une HttpException (comme BadRequestException), on la relance telle quelle
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Si ce n’est pas une HttpException, on retourne une erreur serveur générique
+      throw new InternalServerErrorException("Une erreur inattendue est survenue.");
+
     }
-    const { userId, roleId } = req.user;
-    return this.gatewayService.forwardRequest(data, { userId, roleId });
+
   }
 
  
-  @Get('/:')
+  @Get('/:id')
   async findOne(
     @Query('service') serviceName: string,
     @Query('module') moduleName: string,
@@ -155,7 +173,7 @@ export class GatewayController {
     console.log("findone data:", req.user);
     
     const { userId, roleId } = req.user;
-    return this.gatewayService.forwardRequest(data,{ userId, roleId });
+    return this.gatewayService.serviceCommunication(data);
   }
 
 
@@ -196,23 +214,35 @@ export class GatewayController {
     @Query('module') moduleName: string,
     @Param('id') id: string, 
     @Request() req,
-    @Body() body
+    @Body() body:any,
+    @Res() res: Response,
   ) {
-    const command = `findAll_${moduleName}`;
+    console.log("le body de update:",body);
+    
+    const command = `update_${moduleName}`;
     let data = {
       serviceName:serviceName,
       moduleName: command,
       data:body,
-      method:'GET',
+      method:'PATCH',
       serviceSource:'0'
     }
-    const { userId, roleId } = req.user;
-    // recupere les information de l'utilisateur aupres du service authentification
-    const token= await this.gatewayService.forwardRequest(data,{ userId, roleId });
-    if (!token) {
-      throw new Error("utilisateur non trouve")
+    console.log('========================================================mes data:', data);
+    try {
+      const { userId, roleId } = req.user;
+      // recupere les information de l'utilisateur aupres du service authentification
+      const result = await this.gatewayService.serviceCommunication(data);
+
+      if (!result) {
+        throw new NotFoundException(HttpStatus.NOT_FOUND)
+      }
+      console.log(Date.now(), result);
+      
+      return result
+    } catch (error) {
+      throw new Error(error)
     }
-    return "update"
+   
   }
 
  

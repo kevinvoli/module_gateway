@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Next, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, Next, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Services } from '../discovery/entities/service.entity';
@@ -56,11 +56,44 @@ export class GatewayService {
           
       return response;
        } catch (error) {
-        
-      // Journalise l'échec
-      await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'FAILED',tempsReponse:`${Date.now()- startTime}`,});
+        console.error("Erreur capturée :", error);
 
-         throw new NotFoundException( `Erreur lors de la communication avec le service ${data.serviceName}: ${error[1]}`,)
+    await this.journalServices.create({
+      serviceSource: null,
+      serviceCible: service.id,
+      statut: 'FAILED',
+      tempsReponse: `${Date.now() - startTime}`,
+    });
+
+    // ✅ Si l'erreur est déjà une exception NestJS, la relancer
+    if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      throw error;
+    }
+
+    // ✅ Gestion des erreurs de validation retournées par un microservice
+    if (Array.isArray(error) && error[0]?.constraints) {
+      const formattedErrors = error.map((e) => ({
+        property: e.property,
+        messages: Object.values(e.constraints),
+      }));
+
+      throw new BadRequestException({
+        message: "Validation échouée",
+        errors: formattedErrors,
+      });
+    }
+
+    // ✅ Si l’erreur est une chaîne ou un objet message
+    if (typeof error === 'string') {
+      throw new InternalServerErrorException(error);
+    }
+
+    if (typeof error?.message === 'string') {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    // ✅ Fallback
+    throw new InternalServerErrorException("Une erreur inattendue est survenue.");
        }finally{
          client.close()
        }  
@@ -73,7 +106,7 @@ export class GatewayService {
     if (!service) {
       throw new NotFoundException(`Service ${data.serviceName} non trouvé`);
     }
-      // console.log("mes servcie",service);
+      console.log("mes servcie",service);
       
     const startTime = Date.now();
     const client =await this.createTcpClient( service.host,parseInt(service.port) );
@@ -87,14 +120,44 @@ export class GatewayService {
           
       return response;
        } catch (error) {
-        console.warn(error)
-        
-      // Journalise l'échec
-      await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:error.status,tempsReponse:`${Date.now()- startTime}`,});
-        if (error.status===409) {
-          throw new ConflictException(error?.message)
+        console.error("Erreur capturée :", error);
+
+        await this.journalServices.create({
+          serviceSource: null,
+          serviceCible: service.id,
+          statut: 'FAILED',
+          tempsReponse: `${Date.now() - startTime}`,
+        });
+    
+        // ✅ Si l'erreur est déjà une exception NestJS, la relancer
+        if (error instanceof BadRequestException || error instanceof NotFoundException) {
+          throw error;
         }
-         throw new Error(error)
+    
+        // ✅ Gestion des erreurs de validation retournées par un microservice
+        if (Array.isArray(error) && error[0]?.constraints) {
+          const formattedErrors = error.map((e) => ({
+            property: e.property,
+            messages: Object.values(e.constraints),
+          }));
+    
+          throw new BadRequestException({
+            message: "Validation échouée",
+            errors: formattedErrors,
+          });
+        }
+    
+        // ✅ Si l’erreur est une chaîne ou un objet message
+        if (typeof error === 'string') {
+          throw new InternalServerErrorException(error);
+        }
+    
+        if (typeof error?.message === 'string') {
+          throw new InternalServerErrorException(error.message);
+        }
+    
+        // ✅ Fallback
+        throw new InternalServerErrorException("Une erreur inattendue est survenue.");
        }finally{
          client.close()
        }  

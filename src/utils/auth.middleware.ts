@@ -22,20 +22,20 @@ export class AuthMiddleware implements NestMiddleware {
   async use(req: Request, res: Response, next: NextFunction) {
     const token = req.headers['authorization']?.split(' ')[1];
     console.log("la :",token);
-    console.groupCollapsed(req.headers)
+    // console.groupCollapsed(req.headers)
   
     if (!token) {
       return res.status(401).json({ message: 'Token is missing' });
     }
 
     try {
-      console.log("service:", token);
+      // console.log("service:", token);
 
       const service = await this.discoveryService.getService('authService');
-      console.log("service:", service);
+      // console.log("service:", service);
 
       if (!service) {
-        console.log("service:", service);
+        // console.log("service:", service);
         
         throw new NotFoundException(`Service authService non trouvé`);
       }
@@ -47,6 +47,8 @@ export class AuthMiddleware implements NestMiddleware {
       req.user = response; // Injecte les infos de l'utilisateur dans la requête
       next();
     } catch (err) {
+      console.log("la erreur:",err);
+
       return res.status(401).json({ message: 'Invalid token' });
     }
   }

@@ -1,25 +1,54 @@
-// import { ArgumentsHost, Catch, ExceptionFilter, RpcExceptionFilter } from '@nestjs/common';
-// import { Observable, throwError } from 'rxjs';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 
-// @Catch()
-// export class CustomTcpExceptionFilter implements RpcExceptionFilter {
-//   catch(exception: any, host: ArgumentsHost): Observable<any> {
-//     console.log("ici lexeption ====:",host,exception,);
-    
-//     // Si l'exception est une erreur de validation (BadRequestException)
-//     if (exception.response && exception.response.message) {
-//       return throwError(() => ({
-//         statusCode: exception.response.statusCode || 400,
-//         error: exception.response.error || 'Bad Request',
-//         message: exception.response.message,
-//       }));
-//     }
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
-//     // Pour les autres erreurs
-//     return throwError(() => ({
-//       statusCode: 500,
-//       error: 'Internal Server Error',
-//       message: exception.message || 'An unexpected error occurred.',
-//     }));
-//   }
-// }
+    const timestamp = new Date().toISOString();
+    const path = request.url;
+
+    // Si c’est une exception HTTP (comme BadRequestException, NotFoundException, etc.)
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      const res = exception.getResponse();
+
+      // Si la réponse est déjà un objet (comme dans BadRequestException custom)
+      if (typeof res === 'object' && res !== null) {
+        const { message, errors } = res as any;
+        return response.status(status).json({
+          statusCode: status,
+          message: message || 'Erreur',
+          errors: errors || null,
+          timestamp,
+          path,
+        });
+      }
+
+      // Si c’est juste un message simple (string)
+      return response.status(status).json({
+        statusCode: status,
+        message: res,
+        timestamp,
+        path,
+      });
+    }
+
+    // Pour toute autre erreur générique (ex: throw new Error())
+    return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: exception.message || 'Erreur interne du serveur',
+      timestamp,
+      path,
+    });
+  }
+}
