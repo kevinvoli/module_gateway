@@ -136,7 +136,7 @@ export class GatewayController {
       }
       console.log("les create ",data);
       const { user, roleId } = req.user;
-      return await this.gatewayService.serviceCommunication(data);
+      return await this.gatewayService.forwardRequest(data,req.user);
     } catch (error) {
       console.log("erreur", error);
 
@@ -172,8 +172,7 @@ export class GatewayController {
     }
     console.log("findone data:", req.user);
     
-    const { userId, roleId } = req.user;
-    return this.gatewayService.serviceCommunication(data);
+    return this.gatewayService.forwardRequest(data,req.user);
   }
 
 
