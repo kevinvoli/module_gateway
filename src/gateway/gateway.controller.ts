@@ -34,21 +34,7 @@ export class GatewayController {
 }
 }))
 
-  @MessagePattern({cmd:'process_data'}) // Pattern du message attendu
-  async processData(data: CreatedataDto) {
-    try {
-    console.log("niveau ddd gateway",data);
-    const command = `create_${data.moduleName}`;
-    data.moduleName = command
-      return this.gatewayService.serviceCommunication(
-        data
-      );
-    } catch (error) {
-      console.log("leserrue",error);
-      
-      return { success: false, message: error.message };
-    }
-  }
+
 
   @MessagePattern({cmd:'findAll'}) // Pattern du message attendu
   async finds(data: CreatedataDto) {
@@ -149,7 +135,6 @@ export class GatewayController {
       throw new InternalServerErrorException("Une erreur inattendue est survenue.");
 
     }
-
   }
 
  
@@ -160,7 +145,7 @@ export class GatewayController {
     @Param('id') id: number,
     @Request() req,
   ) {
-    console.log("findone data:", req.user);
+    console.log("findone data:=========================================================================", id);
 
     const command = `findOne_${moduleName}`;
     let data = {
@@ -170,7 +155,7 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    console.log("findone data:", req.user);
+    console.log("findone data:", data);
     
     return this.gatewayService.forwardRequest(data,req.user);
   }
@@ -193,7 +178,7 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    console.log('mes data:', data);
+    // console.log('mes data:', data);
     
     const userId = req.user?.id;
     const roleId = req.user?.roleId;

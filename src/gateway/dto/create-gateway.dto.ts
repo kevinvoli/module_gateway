@@ -13,7 +13,7 @@ export class CreatedataDto {
   
   @IsNotEmpty()
   @IsArray()
-  data:{}|null;
+  data:{}|number |null;
 
   @IsString()
   @IsNotEmpty()

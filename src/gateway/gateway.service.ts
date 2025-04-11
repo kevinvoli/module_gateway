@@ -38,7 +38,8 @@ export class GatewayService {
   // {serviceName: string,command:string,data?: any}
   async forwardRequest(data:CreatedataDto,users) {
     const {user,permission} = users
-    console.log("mes user:", users);
+    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",data);
+    
     
     const service = await this.discoveryService.getService(data.serviceName);
     if (!service) {
@@ -52,11 +53,11 @@ export class GatewayService {
       const response =  await firstValueFrom(client.send({cmd:data.moduleName},{user:{user,permission}, data: data.data? data.data:{}}))
           // Journalise la requête réussie
           await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'SUCCESS',tempsReponse:`${Date.now()- startTime}`,});
-          console.log("la reponse:tok", response);
+         
           
       return response;
        } catch (error) {
-        console.error("Erreur capturée :", error);
+        // console.error("Erreur capturée :", error);
 
     await this.journalServices.create({
       serviceSource: null,
@@ -114,13 +115,13 @@ export class GatewayService {
     try {
       const response =  await firstValueFrom(client.send({cmd:data.moduleName}, data.data? data.data:{}))
           // Journalise la requête réussie
-        console.log("l'response returne par le service:",response);
+        // console.log("l'response returne par le service:",response);
           
           await this.journalServices.create({serviceSource: null,serviceCible: service.id,statut:'SUCCESS',tempsReponse:`${Date.now()- startTime}`,});
           
       return response;
        } catch (error) {
-        console.error("Erreur capturée :", error);
+        // console.error("Erreur capturée :", error);
 
         await this.journalServices.create({
           serviceSource: null,

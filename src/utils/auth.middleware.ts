@@ -21,7 +21,6 @@ export class AuthMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     const token = req.headers['authorization']?.split(' ')[1];
-    console.log("la :",token);
     // console.groupCollapsed(req.headers)
   
     if (!token) {
@@ -42,14 +41,14 @@ export class AuthMiddleware implements NestMiddleware {
 
       const client = await this.createTCPClient(service.host, parseInt(service.port));
       const response = await firstValueFrom(client.send({ cmd: 'validate_token' }, { token }));
-      console.log("la response:",response);
       
       req.user = response; // Injecte les infos de l'utilisateur dans la requête
       next();
     } catch (err) {
-      console.log("la erreur:",err);
 
       return res.status(401).json({ message: 'Invalid token' });
     }
   }
 }
+
+
