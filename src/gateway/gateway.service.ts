@@ -57,7 +57,7 @@ export class GatewayService {
           
       return response;
        } catch (error) {
-        // console.error("Erreur capturée :", error);
+        console.error("Erreur capturée :", error);
 
     await this.journalServices.create({
       serviceSource: null,

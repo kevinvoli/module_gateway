@@ -167,7 +167,7 @@ export class GatewayController {
     @Query('module') moduleName: string,
     @Request() req,
   ) {
-    console.log('mes data:', req.user);
+    // console.log('mes data:', req.user);
 
     try {
       const command = `findAll_${moduleName}`;
@@ -178,10 +178,7 @@ export class GatewayController {
       method:'GET',
       serviceSource:'0'
     }
-    // console.log('mes data:', data);
-    
-    const userId = req.user?.id;
-    const roleId = req.user?.roleId;
+    console.log('mes data findAll:', data);
 
     return await this.gatewayService.forwardRequest(data,req.user);
     } catch (error) {
@@ -201,7 +198,7 @@ export class GatewayController {
     @Body() body:any,
     @Res() res: Response,
   ) {
-    console.log("le body de update:",body);
+    console.log("le body de update:", body);
     
     const command = `update_${moduleName}`;
     let data = {
